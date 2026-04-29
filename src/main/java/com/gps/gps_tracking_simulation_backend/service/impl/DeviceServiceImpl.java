@@ -28,7 +28,9 @@ public class DeviceServiceImpl implements DeviceService {
 	private final ObjectMapper objectMapper;
 	
 	
-	public DeviceServiceImpl(DeviceRepository deviceRepository, RedisTemplate<String, String> redisTemplate, ObjectMapper objectMapper) {
+	public DeviceServiceImpl(DeviceRepository deviceRepository,
+								RedisTemplate<String, String> redisTemplate,
+								ObjectMapper objectMapper) {
 		this.deviceRepository = deviceRepository;
 		this.redisTemplate = redisTemplate;
 		this.objectMapper = objectMapper;
@@ -83,5 +85,40 @@ public class DeviceServiceImpl implements DeviceService {
 	public Page<Device> getDevices(int page, int size) {
 		Pageable pageable = PageRequest.of(page, size);
 		return deviceRepository.findAll(pageable);
+	}
+
+	@Override
+	@Transactional
+	public Device updateDevice(Long id, DeviceCreateRequest request) {
+		Device device = deviceRepository
+							.findById(id)
+							.orElseThrow(() -> new DeviceNotFoundException("Device not found with id: " + id));
+		
+		device.setName(request.name());
+		device.setType(request.type());
+		
+		Device updatedDevice = deviceRepository.save(device);
+		try {
+			String key = "device:" + id;
+			redisTemplate.delete(key);
+		} catch (Exception ex) {
+			System.out.println("Redis delete failed: " + ex.getMessage());
+		}
+		return updatedDevice;
+	}
+
+	@Override
+	@Transactional
+	public void deleteDevice(Long id) {
+		Device device = deviceRepository
+							.findById(id)
+							.orElseThrow(() -> new DeviceNotFoundException("Device not found with id: " + id));
+		deviceRepository.delete(device);
+		try {
+			String key = "device:" + id;
+			redisTemplate.delete(key);
+		} catch (Exception ex) {
+			System.out.println("Redis delete failed: " + ex.getMessage());
+		}
 	}
 }

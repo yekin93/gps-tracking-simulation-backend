@@ -10,4 +10,6 @@ public interface DeviceService {
 	Device createDevice(DeviceCreateRequest request);
 	Device getDeviceById(Long id);
 	Page<Device> getDevices(int page, int size);
+	Device updateDevice(Long id, DeviceCreateRequest request);
+	void deleteDevice(Long id);
 }
